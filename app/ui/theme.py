@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+# Dark palette inspired by https://admin.fastudioagencyadv.it/gestione_operai.php
+BG = '#0C111B'
+BG_GRADIENT_TOP = '#121A2A'
+BG_GRADIENT_BOTTOM = '#0A0F18'
+CARD_BG = '#121A27'
+SURFACE_BG = '#172437'
+TOPBAR_BG = '#111B2D'
+RAIL_BG = '#111B2D'
+TABLE_HEADER_BG = '#1A2436'
+BORDER = '#233044'
+TEXT = '#E5ECF6'
+TEXT_MUTED = '#90A0B8'
+ACCENT = '#7BC323'
+ACCENT_SOFT = '#A6DE65'
+ACCENT_DARK = '#4F7F1A'
+ICON_ACCENT = '#86CC38'
+RAIL_BG_DASH = '#0F1611'
+OK = '#2E8B57'
+DANGER = '#D9534F'
