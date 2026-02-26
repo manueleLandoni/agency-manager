@@ -20,13 +20,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller flet-desktop pillow
 
       - name: Prepare icon
         id: icon
@@ -37,45 +37,63 @@ jobs:
             exit 0
           fi
 
-          if [ ! -f "assets/logo.png" ]; then
+          if [ ! -f "assets/favicon.ico" ]; then
             echo "icon_path=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          mkdir -p build/iconset
-          sips -z 16 16 assets/logo.png --out build/iconset/icon_16x16.png
-          sips -z 32 32 assets/logo.png --out build/iconset/icon_16x16@2x.png
-          sips -z 32 32 assets/logo.png --out build/iconset/icon_32x32.png
-          sips -z 64 64 assets/logo.png --out build/iconset/icon_32x32@2x.png
-          sips -z 128 128 assets/logo.png --out build/iconset/icon_128x128.png
-          sips -z 256 256 assets/logo.png --out build/iconset/icon_128x128@2x.png
-          sips -z 256 256 assets/logo.png --out build/iconset/icon_256x256.png
-          sips -z 512 512 assets/logo.png --out build/iconset/icon_256x256@2x.png
-          sips -z 512 512 assets/logo.png --out build/iconset/icon_512x512.png
-          sips -z 1024 1024 assets/logo.png --out build/iconset/icon_512x512@2x.png
-          iconutil -c icns build/iconset -o build/AppIcon.icns
-          echo "icon_path=build/AppIcon.icns" >> "$GITHUB_OUTPUT"
+          mkdir -p build
+          python - <<'PY'
+from PIL import Image
+
+src = "assets/favicon.ico"
+dst = "build/AppIcon.icns"
+
+img = Image.open(src).convert("RGBA")
+w, h = img.size
+side = max(w, h)
+
+# Create a square transparent canvas before exporting to icns.
+canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+canvas.paste(img, ((side - w) // 2, (side - h) // 2))
+if side < 1024:
+    canvas = canvas.resize((1024, 1024), Image.Resampling.LANCZOS)
+canvas.save(dst)
+PY
+
+          if [ -f "build/AppIcon.icns" ]; then
+            echo "icon_path=build/AppIcon.icns" >> "$GITHUB_OUTPUT"
+          else
+            echo "icon_path=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build app with PyInstaller
         shell: bash
         run: |
           FLET_APP_PATH="$(python - <<'PY'
-          import pathlib
-          import flet_desktop
-          print(pathlib.Path(flet_desktop.__file__).resolve().parent / "app")
-          PY
-          )"
+import pathlib
+try:
+    import flet_desktop
+    print(pathlib.Path(flet_desktop.__file__).resolve().parent / "app")
+except Exception:
+    print("")
+PY
+)"
 
           ICON_ARG=()
           if [ -n "${{ steps.icon.outputs.icon_path }}" ]; then
             ICON_ARG=(--icon "${{ steps.icon.outputs.icon_path }}")
           fi
 
+          EXTRA_DATA=("--add-data" "assets:assets")
+          if [ -n "$FLET_APP_PATH" ]; then
+            EXTRA_DATA+=("--add-data" "${FLET_APP_PATH}:flet_desktop/app")
+          fi
+
           pyinstaller --noconfirm --clean --windowed \
             --name "Agency Manager" \
             "${ICON_ARG[@]}" \
-            --add-data "assets:assets" \
-            --add-data "${FLET_APP_PATH}:flet_desktop/app" \
+            "${EXTRA_DATA[@]}" \
             main.py
 
       - name: Zip .app bundle
