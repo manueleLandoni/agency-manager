@@ -44,22 +44,22 @@ jobs:
 
           mkdir -p build
           python - <<'PY'
-from PIL import Image
+          from PIL import Image
 
-src = "assets/favicon.ico"
-dst = "build/AppIcon.icns"
+          src = "assets/favicon.ico"
+          dst = "build/AppIcon.icns"
 
-img = Image.open(src).convert("RGBA")
-w, h = img.size
-side = max(w, h)
+          img = Image.open(src).convert("RGBA")
+          w, h = img.size
+          side = max(w, h)
 
-# Create a square transparent canvas before exporting to icns.
-canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-canvas.paste(img, ((side - w) // 2, (side - h) // 2))
-if side < 1024:
-    canvas = canvas.resize((1024, 1024), Image.Resampling.LANCZOS)
-canvas.save(dst)
-PY
+          # Create a square transparent canvas before exporting to icns.
+          canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+          canvas.paste(img, ((side - w) // 2, (side - h) // 2))
+          if side < 1024:
+              canvas = canvas.resize((1024, 1024), Image.Resampling.LANCZOS)
+          canvas.save(dst)
+          PY
 
           if [ -f "build/AppIcon.icns" ]; then
             echo "icon_path=build/AppIcon.icns" >> "$GITHUB_OUTPUT"
@@ -71,14 +71,14 @@ PY
         shell: bash
         run: |
           FLET_APP_PATH="$(python - <<'PY'
-import pathlib
-try:
-    import flet_desktop
-    print(pathlib.Path(flet_desktop.__file__).resolve().parent / "app")
-except Exception:
-    print("")
-PY
-)"
+          import pathlib
+          try:
+              import flet_desktop
+              print(pathlib.Path(flet_desktop.__file__).resolve().parent / "app")
+          except Exception:
+              print("")
+          PY
+          )"
 
           ICON_ARG=()
           if [ -n "${{ steps.icon.outputs.icon_path }}" ]; then
